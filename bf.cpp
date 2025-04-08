@@ -14,7 +14,7 @@ struct BfOption
     bool interpretDirect;
     bool interpretAot;
     bool emitIr;
-    bool logElapsedTime;
+    bool printElapsed;
     std::string bfFile;
 };
 
@@ -25,7 +25,7 @@ enum
     OPT_DIRECT,
     OPT_AOT,
     OPT_EMIT_IR,
-    OPT_LOG_ELAPSED_TIME,
+    OPT_PRINT_ELAPSED,
 };
 
 BfOption parseOptions(int argc, char *argv[])
@@ -36,7 +36,7 @@ BfOption parseOptions(int argc, char *argv[])
         {"direct", no_argument, nullptr, OPT_DIRECT},
         {"aot", no_argument, nullptr, OPT_AOT},
         {"emit-ir", no_argument, nullptr, OPT_EMIT_IR},
-        {"log-elapsed-time", no_argument, nullptr, OPT_LOG_ELAPSED_TIME},
+        {"print-elapsed", no_argument, nullptr, OPT_PRINT_ELAPSED},
         {nullptr, 0, nullptr, 0}
     };
 
@@ -57,8 +57,8 @@ BfOption parseOptions(int argc, char *argv[])
             case OPT_EMIT_IR:
                 options.emitIr = true;
                 break;
-            case OPT_LOG_ELAPSED_TIME:
-                options.logElapsedTime = true;
+            case OPT_PRINT_ELAPSED:
+                options.printElapsed = true;
                 break;
             default:
                 fprintf(stderr, "Unknown option: %c\n", optopt);
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
     runner->compileCode();
     runner->run();
 
-    if (options.logElapsedTime)
+    if (options.printElapsed)
     {
         auto &timer = runner->getElapsedTimer();
         timer.printElapsedTimes();
