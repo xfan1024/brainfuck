@@ -29,8 +29,7 @@ public:
 
     void compileCode() override;
     void run() override;
-private:
-
+protected:
     std::vector<bf_insn> mInsns;
 };
 

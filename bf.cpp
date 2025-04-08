@@ -7,12 +7,13 @@
 #include "bf_runner.h"
 #include "bf_runner_direct.h"
 #include "bf_runner_bf_insn.h"
+#include "bf_runner_jit.h"
 
 struct BfOption
 {
     bool interpretBfInst;
     bool interpretDirect;
-    bool interpretAot;
+    bool interpretJit;
     bool emitIr;
     bool printElapsed;
     std::string bfFile;
@@ -21,7 +22,7 @@ struct BfOption
 enum
 {
     OPT_START = 0x100,
-    OPT_BF_INST,
+    OPT_BF_INSN,
     OPT_DIRECT,
     OPT_AOT,
     OPT_EMIT_IR,
@@ -32,9 +33,9 @@ BfOption parseOptions(int argc, char *argv[])
 {
     BfOption options = {};
     struct option longOptions[] = {
-        {"bf-inst", no_argument, nullptr, OPT_BF_INST},
+        {"bf-insn", no_argument, nullptr, OPT_BF_INSN},
         {"direct", no_argument, nullptr, OPT_DIRECT},
-        {"aot", no_argument, nullptr, OPT_AOT},
+        {"jit", no_argument, nullptr, OPT_AOT},
         {"emit-ir", no_argument, nullptr, OPT_EMIT_IR},
         {"print-elapsed", no_argument, nullptr, OPT_PRINT_ELAPSED},
         {nullptr, 0, nullptr, 0}
@@ -45,14 +46,14 @@ BfOption parseOptions(int argc, char *argv[])
     {
         switch (opt)
         {
-            case OPT_BF_INST:
+            case OPT_BF_INSN:
                 options.interpretBfInst = true;
                 break;
             case OPT_DIRECT:
                 options.interpretDirect = true;
                 break;
             case OPT_AOT:
-                options.interpretAot = true;
+                options.interpretJit = true;
                 break;
             case OPT_EMIT_IR:
                 options.emitIr = true;
@@ -70,10 +71,10 @@ BfOption parseOptions(int argc, char *argv[])
         unsigned int modeCounter = 0;
         if (options.interpretBfInst) modeCounter++;
         if (options.interpretDirect) modeCounter++;
-        if (options.interpretAot) modeCounter++;
+        if (options.interpretJit) modeCounter++;
         if (modeCounter > 1)
         {
-            fprintf(stderr, "Error: Only one of --bf-inst, --direct, or --aot can be specified.\n");
+            fprintf(stderr, "Error: Only one of --bf-insn, --direct, or --jit can be specified.\n");
             exit(EXIT_FAILURE);
         }
         if (!modeCounter)
@@ -136,11 +137,9 @@ int main(int argc, char *argv[])
     {
         runner = std::make_shared<BfRunnerDirect>();
     }
-    else if (options.interpretAot)
+    else if (options.interpretJit)
     {
-        // runner = std::make_shared<BfAotRunner>(options.bfFile);
-        fprintf(stderr, "NOTE: --aot is not implemented yet.\n");
-        exit(EXIT_FAILURE);
+        runner = std::make_shared<BfRunnerJit>();
     }
 
     std::string code = readCode(options.bfFile);

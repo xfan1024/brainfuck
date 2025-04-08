@@ -60,7 +60,7 @@ struct BfElapsedTimer
         {
             uint64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(record.end - record.start).count();
             std::string elapsedTime = nanosecondToString(ns);
-            fprintf(stderr, "%10s: %s\n", record.name.c_str(), elapsedTime.c_str());
+            fprintf(stderr, "%12s: %s\n", record.name.c_str(), elapsedTime.c_str());
         }
     }
 

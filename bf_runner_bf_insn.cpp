@@ -114,14 +114,14 @@ std::vector<bf_insn> bf_insn_parse(const char *code)
 
 void BfRunnerBfInsn::compileCode()
 {
-    mTimer.start("bf2insn");
+    mTimer.start("GEN bf-insn");
     mInsns = bf_insn_parse(mSourceCode.c_str());
     mTimer.stop();
 }
 
 void BfRunnerBfInsn::run()
 {
-    mTimer.start("interpret");
+    mTimer.start("RUN bf-insn");
 
     unsigned int pc = 0;
     unsigned int addr = 0;
