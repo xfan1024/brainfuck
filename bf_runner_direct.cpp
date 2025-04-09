@@ -1,9 +1,6 @@
 #include "bf_runner_direct.h"
 #include <stdint.h>
 
-#define BF_MEM_SIZE (1 << 20)
-#define BF_ADDR_MASK (BF_MEM_SIZE - 1)
-
 struct BfRunnerDirect::BfRunnerDirectContext
 {
     uint8_t *memoryBase;

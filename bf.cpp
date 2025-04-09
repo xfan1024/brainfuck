@@ -8,15 +8,19 @@
 #include "bf_runner_direct.h"
 #include "bf_runner_bf_insn.h"
 #include "bf_runner_jit.h"
+#include "bf_compiler.h"
 
 struct BfOption
 {
     bool interpretBfInst;
     bool interpretDirect;
     bool interpretJit;
+    bool aot;
     bool emitIr;
     bool printElapsed;
+    bool noRun;
     std::string bfFile;
+    std::string outputExecutablePath;
 };
 
 enum
@@ -24,6 +28,7 @@ enum
     OPT_START = 0x100,
     OPT_BF_INSN,
     OPT_DIRECT,
+    OPT_JIT,
     OPT_AOT,
     OPT_EMIT_IR,
     OPT_PRINT_ELAPSED,
@@ -35,14 +40,19 @@ BfOption parseOptions(int argc, char *argv[])
     struct option longOptions[] = {
         {"bf-insn", no_argument, nullptr, OPT_BF_INSN},
         {"direct", no_argument, nullptr, OPT_DIRECT},
-        {"jit", no_argument, nullptr, OPT_AOT},
+        {"jit", no_argument, nullptr, OPT_JIT},
+        {"aot", no_argument, nullptr, OPT_AOT},
         {"emit-ir", no_argument, nullptr, OPT_EMIT_IR},
         {"print-elapsed", no_argument, nullptr, OPT_PRINT_ELAPSED},
+        {"no-run", no_argument, nullptr, 'n'},
+        {"run", no_argument, nullptr, 'r'},
+        {"output", required_argument, nullptr, 'o'},
+
         {nullptr, 0, nullptr, 0}
     };
 
     int opt;
-    while ((opt = getopt_long(argc, argv, "", longOptions, nullptr)) != -1)
+    while ((opt = getopt_long(argc, argv, "nro:", longOptions, nullptr)) != -1)
     {
         switch (opt)
         {
@@ -52,14 +62,27 @@ BfOption parseOptions(int argc, char *argv[])
             case OPT_DIRECT:
                 options.interpretDirect = true;
                 break;
-            case OPT_AOT:
+            case OPT_JIT:
                 options.interpretJit = true;
+                break;
+            case OPT_AOT:
+                options.aot = true;
+                options.noRun = true;
                 break;
             case OPT_EMIT_IR:
                 options.emitIr = true;
                 break;
             case OPT_PRINT_ELAPSED:
                 options.printElapsed = true;
+                break;
+            case 'n':
+                options.noRun = true;
+                break;
+            case 'r':
+                options.noRun = false;
+                break;
+            case 'o':
+                options.outputExecutablePath = optarg;
                 break;
             default:
                 fprintf(stderr, "Unknown option: %c\n", optopt);
@@ -72,9 +95,10 @@ BfOption parseOptions(int argc, char *argv[])
         if (options.interpretBfInst) modeCounter++;
         if (options.interpretDirect) modeCounter++;
         if (options.interpretJit) modeCounter++;
+        if (options.aot) modeCounter++;
         if (modeCounter > 1)
         {
-            fprintf(stderr, "Error: Only one of --bf-insn, --direct, or --jit can be specified.\n");
+            fprintf(stderr, "Error: Only one of --bf-insn, --direct, --jit, or --aot can be used.\n");
             exit(EXIT_FAILURE);
         }
         if (!modeCounter)
@@ -101,28 +125,6 @@ BfOption parseOptions(int argc, char *argv[])
     return options;
 }
 
-std::string readCode(const std::string &filename)
-{
-    FILE *file = fopen(filename.c_str(), "rb");
-    if (!file)
-    {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-    fseek(file, 0, SEEK_END);
-    long fileSize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    std::string code(fileSize, '\0');
-    size_t bytesRead = fread(&code[0], 1, fileSize, file);
-    if (bytesRead != fileSize)
-    {
-        perror("Error reading file");
-        fclose(file);
-        exit(EXIT_FAILURE);
-    }
-    fclose(file);
-    return code;
-}
 
 int main(int argc, char *argv[])
 {
@@ -141,12 +143,33 @@ int main(int argc, char *argv[])
     {
         runner = std::make_shared<BfRunnerJit>();
     }
+    else if (options.aot)
+    {
+        if (options.outputExecutablePath.empty())
+        {
+            fprintf(stderr, "Error: --aot requires --output to be specified.\n");
+            return 1;
+        }
+        BfCompiler *compiler = new BfCompiler();
+        compiler->setOutputExecutablePath(options.outputExecutablePath);
+        runner = std::shared_ptr<BfRunner>(compiler);
+    }
+    else
+    {
+        fprintf(stderr, "Error: No valid runner selected.\n");
+        return 1;
+    }
 
-    std::string code = readCode(options.bfFile);
-    runner->setCode(code);
+    runner->setEnableIrEmit(options.emitIr);
+
+    runner->setSourcePath(options.bfFile);
     runner->preprocessCode();
     runner->compileCode();
-    runner->run();
+
+    if (!options.noRun)
+    {
+        runner->run();
+    }
 
     if (options.printElapsed)
     {

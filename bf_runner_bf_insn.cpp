@@ -1,8 +1,5 @@
 #include "bf_runner_bf_insn.h"
 
-#define BF_MEM_SIZE (1 << 20)
-#define BF_ADDR_MASK (BF_MEM_SIZE - 1)
-
 void bf_insn_append(std::vector<bf_insn> &insns, int32_t code, int32_t operand)
 {
     insns.push_back({code, operand});
@@ -112,11 +109,58 @@ std::vector<bf_insn> bf_insn_parse(const char *code)
     return insns;
 }
 
+static void dumpBfInsnToFile(const std::string &bf_file, std::vector<bf_insn> &insns)
+{
+    const char *bfInsnName[BF_INSN_MAX] =
+    {
+        "AA",
+        "VA",
+        "VI",
+        "VO",
+        "LB",
+        "LE",
+    };
+
+    std::string ir_file = bf_file + ".bfinsn";
+    FILE *fp = fopen(ir_file.c_str(), "w");
+    if (!fp)
+    {
+        fprintf(stderr, "Error: Cannot open file %s\n", ir_file.c_str());
+        return;
+    }
+
+    for (unsigned int i = 0; i < insns.size(); i++)
+    {
+        int32_t code = insns[i].opcode;
+        int32_t operand = insns[i].operand;
+        const char *name = bfInsnName[code];
+        if (code == BF_INSN_VI || code == BF_INSN_VO)
+        {
+            fprintf(fp, "[%05x] %s\n", i, name);
+        }
+        else if (code == BF_INSN_LB || code == BF_INSN_LE)
+        {
+            fprintf(fp, "[%05x] %s %05x\n", i, name, (unsigned int)operand);
+        }
+        else
+        {
+            fprintf(fp, "[%05x] %s %d\n", i, name, (int)operand);
+        }
+    }
+    fclose(fp);
+}
+
+
 void BfRunnerBfInsn::compileCode()
 {
     mTimer.start("GEN bf-insn");
     mInsns = bf_insn_parse(mSourceCode.c_str());
     mTimer.stop();
+
+    if (mEnableIrEmit)
+    {
+        dumpBfInsnToFile(mSourcePath, mInsns);
+    }
 }
 
 void BfRunnerBfInsn::run()

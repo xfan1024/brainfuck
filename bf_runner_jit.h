@@ -17,4 +17,4 @@ private:
     std::unique_ptr<llvm::orc::LLJIT> mJIT;
 };
 
-#endif // BF_RUNNER_AOT_H
+#endif // BF_RUNNER_JIT_H

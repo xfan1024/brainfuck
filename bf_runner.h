@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include "bf_elapsed_timer.h"
 
+#define BF_MEM_SIZE (1 << 20)
+#define BF_ADDR_MASK (BF_MEM_SIZE - 1)
+
 class BfRunner
 {
 public:
@@ -22,10 +25,12 @@ public:
         mOutputFd = fd;
     }
 
-    void setCode(const std::string &code)
+    void setEnableIrEmit(bool enable)
     {
-        mSourceCode = code;
+        mEnableIrEmit = enable;
     }
+
+    void setSourcePath(const std::string &path);
 
     BfElapsedTimer &getElapsedTimer()
     {
@@ -39,6 +44,8 @@ public:
 protected:
     BfElapsedTimer mTimer;
     std::string mSourceCode;
+    std::string mSourcePath;
+    bool mEnableIrEmit {false};
     static void writeByte(BfRunner *runner, unsigned char byte);
     static unsigned char readByte(BfRunner *runner);
 
