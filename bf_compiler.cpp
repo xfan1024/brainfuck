@@ -43,7 +43,7 @@ int main()
 
 static void clangCompile(const std::string main, const std::string &llvmIr, const std::string outputPath)
 {
-    const char *cflags;
+    const char *cc, *cflags;
     char mainTemplate[] = "/tmp/mainXXXXXX.c"; // 后缀 ".c" 长度为2
     char llvmTemplate[] = "/tmp/llvmXXXXXX.ll"; // 后缀 ".ll" 长度为3
     std::string clangCmd;
@@ -71,14 +71,20 @@ static void clangCompile(const std::string main, const std::string &llvmIr, cons
     mainFd = -1;
     llvmFd = -1;
 
+    cc = getenv("CC");
     cflags = getenv("CFLAGS");
+
+    if (cc == NULL)
+    {
+        cc = "clang";
+    }
     if (cflags == NULL)
     {
         cflags = "";
     }
-    clangCmd = std::string("clang ") + cflags + " -o " + outputPath + " " + llvmTemplate + " " + mainTemplate;
-   
-    fprintf(stderr, "clang command: %s\n", clangCmd.c_str());
+
+    clangCmd = std::string(cc) + " " + cflags + " " + llvmTemplate + " " + mainTemplate + " -o " + outputPath;
+
     ret = system(clangCmd.c_str());
     unlink(mainTemplate);
     unlink(llvmTemplate);
@@ -144,7 +150,7 @@ void BfCompiler::run()
         perror("fork");
         exit(1);
     }
-    
+
     if (pid == 0)
     {
         // Child process
